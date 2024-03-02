@@ -4,7 +4,10 @@ require("aws-sdk/lib/maintenance_mode_message").suppress = true;
 const multer = require("multer");
 const multerS3 = require("multer-s3");
 const dotenv = require("dotenv");
+const sendWelcommeEmail = require("../utils/sendWelcomeEmail");
+const sendOTPforPassword = require("../utils/sendOTPforPassword");
 const s3Uploadv2 = require("../utils/s3-service");
+
 dotenv.config();
 
 const storage = multer.memoryStorage();
@@ -23,23 +26,23 @@ const signUp = async (req, res, next) => {
   try {
     const userByEmail = await User.findOne({ email });
     if (userByEmail) {
-      return res
-        .status(400)
-        .json({ error: "User with this email already exists" });
+      return next("User with this email exists");
     }
 
     const userByUsername = await User.findOne({ user_name });
     if (userByUsername) {
-      return res.status(400).json({ error: "User with this user name exists" });
+      return next("User name exists");
     }
 
     let imageUrl = image || "https://aezashiva.s3.amazonaws.com/rocket.png";
+
     try {
       const result = await s3Uploadv2(req.file);
       imageUrl = result.Location;
     } catch (e) {
       console.log("error occured");
     }
+
     const saveUser = new User({
       name,
       email,
@@ -47,12 +50,50 @@ const signUp = async (req, res, next) => {
       user_name,
       image: imageUrl,
     });
+
     console.log(saveUser);
     await saveUser.save();
-    return res.status(200).send(saveUser);
+
+    await sendWelcommeEmail(saveUser.name, saveUser.email);
+    return res
+      .status(200)
+      .json({ msg: "Your account is successfully created" });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: "Failed to sign up" });
   }
 };
-module.exports = { signUp, upload };
+
+const login = async (req, res, next) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next("Invalid Credentials");
+    }
+    const isMatch = await user.comparePassword(password);
+    console.log(isMatch);
+    if (!isMatch) {
+      return next("invalid credentials");
+    }
+    const token = user.createJWT();
+    return res.status(200).json({ success: "true", user, token });
+  } catch (e) {
+    next(e);
+  }
+};
+const sendOTP = async (req, res, next) => {
+  const { email } = req.body;
+  try {
+    const verification_code = Math.floor(Math.random() * 900000) + 100000;
+    const check_email = await User.findOne({ email });
+    if (!check_email) {
+      return next("No user with this email exists");
+    }
+    await sendOTPforPassword(email, verification_code);
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+module.exports = { signUp, upload, login, sendOTP };
