@@ -21,7 +21,10 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter, limits: 1000000 });
 
 const signUp = async (req, res, next) => {
-  const { name, email, password, user_name, image } = req.body;
+  const { name, email, password, user_name } = req.body;
+  console.log(req.file);
+  if (!name || !email || !password || !user_name)
+    next("Please fill all the data");
 
   try {
     const userByEmail = await User.findOne({ email });
@@ -34,15 +37,12 @@ const signUp = async (req, res, next) => {
       return next("User name exists");
     }
 
-    let imageUrl = image || "https://aezashiva.s3.amazonaws.com/rocket.png";
+    let imageUrl = "https://aezashiva.s3.amazonaws.com/rocket.png";
 
-    try {
+    if (req.file) {
       const result = await s3Uploadv2(req.file);
       imageUrl = result.Location;
-    } catch (e) {
-      console.log("error occured");
     }
-
     const saveUser = new User({
       name,
       email,
@@ -54,13 +54,14 @@ const signUp = async (req, res, next) => {
     console.log(saveUser);
     await saveUser.save();
 
-    await sendWelcommeEmail(saveUser.name, saveUser.email);
-    return res
-      .status(200)
-      .json({ msg: "Your account is successfully created" });
+    // await sendWelcommeEmail(saveUser.name, saveUser.email);
+    return res.status(200).json({
+      success: true,
+      msg: "Your account has been created successfully",
+    });
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ error: "Failed to sign up" });
+    next("Failed to signup");
   }
 };
 

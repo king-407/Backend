@@ -21,6 +21,6 @@ app.use("/user", userRouter);
 app.use("/posts", postsRouter);
 app.use("/comments", commentRouter);
 app.use(errorM);
-app.listen(3000, () => {
+app.listen(5000, () => {
   console.log("server running");
 });
