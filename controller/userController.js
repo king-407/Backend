@@ -25,6 +25,7 @@ const signUp = async (req, res, next) => {
   console.log(req.file);
   if (!name || !email || !password || !user_name)
     next("Please fill all the data");
+  if (email == "") next("Please fill all the data");
 
   try {
     const userByEmail = await User.findOne({ email });
@@ -69,20 +70,20 @@ const login = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (!user) {
-      return next("Invalid Credentials");
-    }
-    const isMatch = await user.comparePassword(password);
-    console.log(isMatch);
-    if (!isMatch) {
-      return next("invalid credentials");
-    }
+    if (user) {
+      const isMatch = await user.comparePassword(password);
+      console.log(isMatch);
+      if (!isMatch) {
+        return next("invalid credentials");
+      }
+    } else return next("Invalid credentials");
     const token = user.createJWT();
-    return res.status(200).json({ success: "true", user, token });
+    return res.status(200).json({ success: true, user, token });
   } catch (e) {
     next(e);
   }
 };
+
 const sendOTP = async (req, res, next) => {
   const { email } = req.body;
   try {
