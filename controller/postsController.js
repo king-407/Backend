@@ -20,6 +20,10 @@ const upload = multer({ storage, fileFilter, limits: 1000000 });
 const createPost = async (req, res, next) => {
   const { content, title, image, category } = req.body;
 
+  if (!content || !title || !category) {
+    return next("Please enter all the necessary details");
+  }
+  let imageUrl = "https://aezashiva.s3.amazonaws.com/rocket.png";
   try {
     const result = await s3Uploadv2(req.file);
     imageUrl = result.Location;
@@ -34,7 +38,9 @@ const createPost = async (req, res, next) => {
     user: req.user.userId,
   });
   await post.save();
-  return res.status(200).json({ post });
+  return res
+    .status(200)
+    .json({ post, success: true, msg: "Your post is successfully created" });
 };
 
 const getAllPosts = async (req, res, next) => {

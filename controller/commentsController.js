@@ -2,6 +2,9 @@ const Comment = require("../model/commentModel");
 
 const writeComment = async (req, res, next) => {
   const { postId, comment } = req.body;
+  if (!comment || comment == "") {
+    return next("Comment cannot be empty");
+  }
   const thoughts = new Comment({
     post: postId,
     user: req.user.userId,
