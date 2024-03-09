@@ -24,7 +24,7 @@ const signUp = async (req, res, next) => {
   const { name, email, password, user_name } = req.body;
   console.log(req.file);
   if (!name || !email || !password || !user_name)
-    next("Please fill all the data");
+    return next("Please fill all the data");
   if (email == "") next("Please fill all the data");
 
   try {
@@ -98,4 +98,34 @@ const sendOTP = async (req, res, next) => {
   }
 };
 
-module.exports = { signUp, upload, login, sendOTP };
+const follow = async (req, res, next) => {
+  const { personId } = req.body;
+  const owner = req.user.userId;
+  try {
+    const recieve = await User.findByIdAndUpdate(personId, {
+      $push: { followers: owner },
+    });
+    const sent = await User.findByIdAndUpdate(owner, {
+      $push: { following: personId },
+    });
+
+    const celeb = await User.findOne({ _id: personId });
+    const personName = celeb.user_name;
+
+    res
+      .status(200)
+      .json({ success: true, msg: `You are now following ${personName}` });
+  } catch (e) {}
+};
+
+const getUsers = async (req, res, next) => {
+  try {
+    const currentUser = req.user.userId;
+    const users = await User.find({ _id: { $ne: currentUser } });
+    res.status(200).send(users);
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+module.exports = { signUp, upload, login, sendOTP, follow, getUsers };

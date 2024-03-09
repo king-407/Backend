@@ -12,7 +12,7 @@ const writeComment = async (req, res, next) => {
   });
 
   await thoughts.save();
-  res.status(200).send(thoughts);
+  res.status(200).json({ success: true, msg: "Comment successfully created" });
 };
 
 const getAllCommentsOfaPost = async (req, res, next) => {
