@@ -121,7 +121,9 @@ const follow = async (req, res, next) => {
 const getUsers = async (req, res, next) => {
   try {
     const currentUser = req.user.userId;
-    const users = await User.find({ _id: { $ne: currentUser } });
+    const users = await User.find({ _id: { $ne: currentUser } }).populate(
+      "followers"
+    );
     res.status(200).send(users);
   } catch (e) {
     console.log(e);
