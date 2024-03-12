@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const sendWelcommeEmail = require("../utils/sendWelcomeEmail");
 const sendOTPforPassword = require("../utils/sendOTPforPassword");
 const s3Uploadv2 = require("../utils/s3-service");
+const crypto = require("crypto");
 
 dotenv.config();
 
@@ -84,15 +85,62 @@ const login = async (req, res, next) => {
   }
 };
 
-const sendOTP = async (req, res, next) => {
+const sendToken = async (req, res, next) => {
   const { email } = req.body;
   try {
-    const verification_code = Math.floor(Math.random() * 900000) + 100000;
-    const check_email = await User.findOne({ email });
-    if (!check_email) {
+    const user = await User.findOne({ email });
+    if (!user) {
       return next("No user with this email exists");
     }
-    await sendOTPforPassword(email, verification_code);
+    const resetToken = user.createPasswordToken();
+    await user.save();
+
+    const resetUrl = `${req.protocol}://localhost:3000/users/reset/${resetToken}`;
+    try {
+      await sendOTPforPassword(email, resetUrl, function (error) {
+        if (error) {
+          user.resetToken = null;
+          user.passwordResetToken = null;
+          user.passwordResetTokenExpires = null;
+          user
+            .save()
+            .then(() => {
+              return next("Failed to send reset email");
+            })
+            .catch(next);
+        } else {
+          res.status(200).json({
+            success: true,
+            msg: "Password reset link has been sent to your email",
+          });
+        }
+      });
+    } catch (e) {}
+  } catch (e) {}
+};
+
+const changePassword = async (req, res, next) => {
+  const { password } = req.body;
+  try {
+    const token = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetTokenExpires: { $gt: Date.now() },
+    });
+    if (!user) {
+      return next("Reset link has expired or is invalid");
+    }
+    user.password = password;
+    user.passwordResetToken = null;
+    user.passwordResetTokenExpires = null;
+    await user.save();
+    res.status(200).json({
+      success: true,
+      msg: "Your password has been changed successfully",
+    });
   } catch (e) {
     console.log(e);
   }
@@ -130,4 +178,13 @@ const getUsers = async (req, res, next) => {
   }
 };
 
-module.exports = { signUp, upload, login, sendOTP, follow, getUsers };
+module.exports = {
+  signUp,
+  upload,
+  login,
+  sendToken,
+  follow,
+  getUsers,
+
+  changePassword,
+};

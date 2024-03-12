@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-const sendOTPforPassword = async (email, verification_code) => {
+const sendOTPforPassword = async (email, resetUrl, callback) => {
   try {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -14,15 +14,16 @@ const sendOTPforPassword = async (email, verification_code) => {
     const mailOptions = {
       from: "Shivam Tiwari",
       to: email,
-      subject: `Welcome to Large`,
-      html: `Your otp is ${verification_code} don;t share it with anyone `,
+      subject: `Password reset mail`,
+      html: `click on the link to reset your password ${resetUrl} `,
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
         console.log(error);
+        callback(error);
       } else {
-        res.status(200).jso({ success: true, msg: "OTP is sent to email" });
+        callback(null);
       }
     });
   } catch (e) {

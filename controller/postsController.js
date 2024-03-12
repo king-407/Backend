@@ -45,10 +45,20 @@ const createPost = async (req, res, next) => {
 
 const getAllPosts = async (req, res, next) => {
   try {
-    const posts = await Post.find().populate("user");
-    res.status(200).send(posts);
+    const posts = await Post.find({});
+    return res.status(200).send(posts);
   } catch (e) {
     console.log("error");
+  }
+};
+
+const getAllPostsofAUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const posts = await Post.find({ user: userId });
+    res.status(200).send(posts);
+  } catch (e) {
+    console.log(e);
   }
 };
 
@@ -60,4 +70,10 @@ const getPostById = async (req, res, next) => {
     console.log("error");
   }
 };
-module.exports = { createPost, upload, getAllPosts, getPostById };
+module.exports = {
+  createPost,
+  upload,
+  getAllPosts,
+  getPostById,
+  getAllPostsofAUser,
+};

@@ -10,15 +10,19 @@ const {
   signUp,
   upload,
   login,
-  sendOTP,
+  sendToken,
   follow,
   getUsers,
+  verifyToken,
+  changePassword,
 } = require("../controller/userController");
 const auth = require("../middleware/authMiddleware");
 const router = express.Router();
 router.post("/signup", upload.single("image"), signUp);
 router.post("/login", login);
-router.post("/sendOTP", sendOTP);
+router.post("/forgot-password", sendToken);
 router.post("/follow", auth, follow);
 router.get("/getUser", auth, getUsers);
+
+router.post("/resetPassword/:token", changePassword);
 module.exports = router;
