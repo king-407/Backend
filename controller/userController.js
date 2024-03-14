@@ -23,7 +23,7 @@ const upload = multer({ storage, fileFilter, limits: 1000000 });
 
 const signUp = async (req, res, next) => {
   const { name, email, password, user_name } = req.body;
-  console.log(req.file);
+
   if (!name || !email || !password || !user_name)
     return next("Please fill all the data");
   if (email == "") next("Please fill all the data");
@@ -53,7 +53,6 @@ const signUp = async (req, res, next) => {
       image: imageUrl,
     });
 
-    console.log(saveUser);
     await saveUser.save();
 
     // await sendWelcommeEmail(saveUser.name, saveUser.email);
@@ -62,7 +61,6 @@ const signUp = async (req, res, next) => {
       msg: "Your account has been created successfully",
     });
   } catch (err) {
-    console.log(err);
     next("Failed to signup");
   }
 };
@@ -73,7 +71,7 @@ const login = async (req, res, next) => {
     const user = await User.findOne({ email });
     if (user) {
       const isMatch = await user.comparePassword(password);
-      console.log(isMatch);
+
       if (!isMatch) {
         return next("invalid credentials");
       }
